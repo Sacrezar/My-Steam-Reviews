@@ -35,12 +35,27 @@ def get_reviews(url,pages):
     while not end_loop and nbr_loop<=pages-1:
         nbr_loop+=1
         elem = driver.find_elements_by_class_name("leftcol")
-        for i in elem:
-            html_text = i.get_attribute("innerHTML")
+        elem2 = driver.find_elements_by_class_name("header")
+        for i in range(len(elem)):
+            likes_and_funny = elem2[i].text
+            if len(likes_and_funny.split("\n"))==2:
+                likes, funny = likes_and_funny.split("\n")
+                nbr_likes = likes.split(" ")[0]
+                nbr_funny = funny.split(" ")[0]
+            else:
+                nbr_likes = likes_and_funny.split(" ")[0]
+                nbr_funny = 0
+            try:
+                nbr_likes = int(nbr_likes)
+            except ValueError:
+                nbr_likes = 0
+
+            html_text = elem[i].get_attribute("innerHTML")
             reviews.append({
                             "game_name": None,
                             "game_id": int(html_text.split("https://steamcommunity.com/app/")[1].split('"')[0]),
-                            "likes": None,
+                            "likes": nbr_likes,
+                            "funny": nbr_funny,
                             "total_words":None,
                             "posted":None,
                             "last_edited":None
