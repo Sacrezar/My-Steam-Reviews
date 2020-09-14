@@ -7,11 +7,6 @@ import	json
 import requests
 import queue
 
-games = []
-reviews = []
-rated_games = []
-not_rated_games = []
-
 def get_games(account_id, api_key):
     call = f"http://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key={api_key}&steamid={account_id}&include_appinfo=1&include_played_free_games=1&format=json"
     response = requests.get(call)
@@ -34,10 +29,10 @@ def get_reviews(url,pages):
 
     while not end_loop and nbr_loop<=pages-1:
         nbr_loop+=1
-        elem = driver.find_elements_by_class_name("leftcol")
-        elem2 = driver.find_elements_by_class_name("header")
-        for i in range(len(elem)):
-            likes_and_funny = elem2[i].text
+        e_game_id = driver.find_elements_by_class_name("leftcol")
+        e_likes_and_funny = driver.find_elements_by_class_name("header")
+        for i in range(len(e_game_id)):
+            likes_and_funny = e_likes_and_funny[i].text
             if len(likes_and_funny.split("\n"))==2:
                 likes, funny = likes_and_funny.split("\n")
                 nbr_likes = likes.split(" ")[0]
@@ -50,7 +45,7 @@ def get_reviews(url,pages):
             except ValueError:
                 nbr_likes = 0
 
-            html_text = elem[i].get_attribute("innerHTML")
+            html_text = e_game_id[i].get_attribute("innerHTML")
             reviews.append({
                             "game_name": None,
                             "game_id": int(html_text.split("https://steamcommunity.com/app/")[1].split('"')[0]),
@@ -71,6 +66,12 @@ def get_reviews(url,pages):
     driver.close()
     return reviews
 
+games = []
+reviews = []
+rated_games = []
+not_rated_games = []
+nbr_thread = 10
+
 with open('user_info.json') as f:
     info = json.load(f)
 
@@ -88,7 +89,7 @@ elem = driver.find_elements_by_class_name("pagelink")
 nbr_pages = int(elem[2].text)
 driver.close() 
 
-nbr_thread = 10
+# Calculate how many page for a gven thread
 if nbr_pages>nbr_thread:
     nbr_pages_for_each_thread = int(nbr_pages / (nbr_thread-1))
     if int(nbr_pages % nbr_thread) == 0:
@@ -100,18 +101,15 @@ else:
     nbr_pages_for_each_thread= 1
     nbr_pages_for_last_thread= 1
 
-print(nbr_thread, nbr_pages_for_each_thread, nbr_pages_for_last_thread)
-
-
-page = 1
+curr_page = 1
 threads = []
 que = queue.Queue()
 for thread in range(nbr_thread-1):
-    t = threading.Thread(target=lambda q, arg1, arg2 : q.put(get_reviews(arg1, arg2)), args=(que, url_reviews + "?p=" + str(page), nbr_pages_for_each_thread))
-    page+=nbr_pages_for_each_thread
+    t = threading.Thread(target=lambda q, arg1, arg2 : q.put(get_reviews(arg1, arg2)), args=(que, url_reviews + "?p=" + str(curr_page), nbr_pages_for_each_thread))
+    curr_page+=nbr_pages_for_each_thread
     threads.append(t)
     t.start()
-    t = threading.Thread(target=lambda q, arg1, arg2 : q.put(get_reviews(arg1, arg2)), args=(que, url_reviews + "?p=" + str(page), nbr_pages_for_last_thread))
+    t = threading.Thread(target=lambda q, arg1, arg2 : q.put(get_reviews(arg1, arg2)), args=(que, url_reviews + "?p=" + str(curr_page), nbr_pages_for_last_thread))
 threads.append(t)
 t.start()
 
@@ -145,8 +143,8 @@ for game in games:
     else:
         not_rated_games.append(game["name"])
 
-# for review in reviews:
-#     print(review, "\n")
+for review in reviews:
+    print(review, "\n")
 print(len(games),len(reviews))
 
 for i in range(10):
