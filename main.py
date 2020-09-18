@@ -26,13 +26,14 @@ def get_reviews(url,pages):
     driver.get(url)
     end_loop = False
     nbr_loop = 0
-
     while not end_loop and nbr_loop<=pages-1:
         nbr_loop+=1
         e_game_id = driver.find_elements_by_class_name("leftcol")
         e_likes_and_funny = driver.find_elements_by_class_name("header")
         e_content = driver.find_elements_by_class_name("content")
+
         for i in range(len(e_game_id)):
+            nbr_awards = 0  
             likes_and_funny = e_likes_and_funny[i].text
             if len(likes_and_funny.split("\n"))==2:
                 likes, funny = likes_and_funny.split("\n")
@@ -45,6 +46,17 @@ def get_reviews(url,pages):
                 nbr_likes = int(nbr_likes)
             except ValueError:
                 nbr_likes = 0
+            # print(e_likes_and_funny[i].get_attribute("innerHTML"))
+            if e_likes_and_funny[i].get_attribute("innerHTML").find("review_award_count"):
+                awards = e_likes_and_funny[i].get_attribute("innerHTML").split("review_award_count")
+                del awards[0]
+                for award in awards:
+                    nb = award.split("</span>")
+                    nb = nb[0].split(">")
+                    nbr_awards += int(nb[1])
+                print(nbr_awards)
+              
+
 
             total_words = len(e_content[i+1].text.split())
 
@@ -52,8 +64,9 @@ def get_reviews(url,pages):
             reviews.append({
                             "game_name": None,
                             "game_id": int(html_text.split("https://steamcommunity.com/app/")[1].split('"')[0]),
-                            "likes": nbr_likes,
-                            "funny": nbr_funny,
+                            "nbr_likes": nbr_likes,
+                            "nbr_funny": nbr_funny,
+                            "nbr_awards": nbr_awards,
                             "total_words":total_words,
                             "posted":None,
                             "last_edited":None
@@ -88,10 +101,23 @@ url_reviews = url + "/recommended/"
 # Retrieve number of pages
 driver = webdriver.Firefox(executable_path=r'.\geckodriver.exe')
 driver.get(url_reviews)
+driver.add_cookie({"name" : "Steam_Language", "value" : "english"}) 
+# e_lang = driver.find_element_by_id("language_pulldown")
+# e_lang.click()
+# e_lang = driver.find_elements_by_class_name("popup_menu_item")
+# for i in e_lang:
+#     if "english" in i.text.lower():
+#         i.click()
+
 elem = driver.find_elements_by_class_name("pagelink")
 nbr_pages = int(elem[2].text)
 driver.close() 
+# driver = webdriver.Firefox(executable_path=r'.\geckodriver.exe')
+# driver.get(url_reviews)
+# driver.implicitly_wait(10) 
+# driver.close()
 
+# nbr_pages=1
 # Calculate how many page for a gven thread
 if nbr_pages>nbr_thread:
     nbr_pages_for_each_thread = int(nbr_pages / (nbr_thread-1))
@@ -112,7 +138,8 @@ for thread in range(nbr_thread-1):
     curr_page+=nbr_pages_for_each_thread
     threads.append(t)
     t.start()
-    t = threading.Thread(target=lambda q, arg1, arg2 : q.put(get_reviews(arg1, arg2)), args=(que, url_reviews + "?p=" + str(curr_page), nbr_pages_for_last_thread))
+
+t = threading.Thread(target=lambda q, arg1, arg2 : q.put(get_reviews(arg1, arg2)), args=(que, url_reviews + "?p=" + str(curr_page), nbr_pages_for_last_thread))
 threads.append(t)
 t.start()
 
