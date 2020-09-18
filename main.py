@@ -1,11 +1,13 @@
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
+from datetime import datetime
 import concurrent.futures
 import threading
 import random
 import	json
 import requests
 import queue
+import csv
 
 def get_games(account_id, api_key):
     call = f"http://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key={api_key}&steamid={account_id}&include_appinfo=1&include_played_free_games=1&format=json"
@@ -20,9 +22,38 @@ def get_games(account_id, api_key):
                     })
     return games
 
+def convert_date(date):
+    months = [
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November', 
+    'December'
+    ]
+    date = date.split(" ")
+    date_to_return = date[0] + "/" + str(months.index(date[1])+1) + "/" 
+    if len(date)<3:
+        date_to_return += str(datetime.today().year)
+    else: 
+        date_to_return += date[2]
+    return date_to_return
+
+
+
+
 def get_reviews(url,pages):
-    # reviews = []
-    driver = webdriver.Firefox(executable_path=r'.\geckodriver.exe')
+
+    # driver = webdriver.Firefox(executable_path=r'.\geckodriver.exe')
+    profile = webdriver.FirefoxProfile()
+    profile.set_preference('intl.accept_languages', 'en-US, en')
+    driver = webdriver.Firefox(firefox_profile=profile)
     driver.get(url)
     end_loop = False
     nbr_loop = 0
@@ -31,12 +62,12 @@ def get_reviews(url,pages):
         e_game_id = driver.find_elements_by_class_name("leftcol")
         e_likes_and_funny = driver.find_elements_by_class_name("header")
         e_content = driver.find_elements_by_class_name("content")
-
+        e_dates = driver.find_elements_by_class_name("posted")
         for i in range(len(e_game_id)):
             nbr_awards = 0  
             likes_and_funny = e_likes_and_funny[i].text
-            if len(likes_and_funny.split("\n"))==2:
-                likes, funny = likes_and_funny.split("\n")
+            if len(likes_and_funny.split("\n"))>=2:
+                likes, funny = likes_and_funny.split("\n",1)
                 nbr_likes = likes.split(" ")[0]
                 nbr_funny = funny.split(" ")[0]
             else:
@@ -54,8 +85,14 @@ def get_reviews(url,pages):
                     nb = award.split("</span>")
                     nb = nb[0].split(">")
                     nbr_awards += int(nb[1])
-                print(nbr_awards)
-              
+            posted, edited = e_dates[i].text.replace(",","").split(".", 1)
+            posted = posted.replace("Posted ","")
+            posted = convert_date(posted)
+            if len(edited)>0:
+                edited = edited.replace(" Last edited ", "").replace(".","")
+                last_edited = convert_date(edited)
+            else:
+                last_edited = None
 
 
             total_words = len(e_content[i+1].text.split())
@@ -68,8 +105,8 @@ def get_reviews(url,pages):
                             "nbr_funny": nbr_funny,
                             "nbr_awards": nbr_awards,
                             "total_words":total_words,
-                            "posted":None,
-                            "last_edited":None
+                            "posted":posted,
+                            "last_edited":last_edited
             })
 
         change_page = driver.find_elements_by_class_name("pagebtn")
@@ -81,6 +118,7 @@ def get_reviews(url,pages):
 
     driver.close()
     return reviews
+
 
 games = []
 reviews = []
@@ -98,26 +136,15 @@ url = "https://steamcommunity.com/id/" + vanity_url
 url_games = url + "games?tab=all"
 url_reviews = url + "/recommended/"
 
+
 # Retrieve number of pages
 driver = webdriver.Firefox(executable_path=r'.\geckodriver.exe')
 driver.get(url_reviews)
-driver.add_cookie({"name" : "Steam_Language", "value" : "english"}) 
-# e_lang = driver.find_element_by_id("language_pulldown")
-# e_lang.click()
-# e_lang = driver.find_elements_by_class_name("popup_menu_item")
-# for i in e_lang:
-#     if "english" in i.text.lower():
-#         i.click()
 
 elem = driver.find_elements_by_class_name("pagelink")
 nbr_pages = int(elem[2].text)
 driver.close() 
-# driver = webdriver.Firefox(executable_path=r'.\geckodriver.exe')
-# driver.get(url_reviews)
-# driver.implicitly_wait(10) 
-# driver.close()
 
-# nbr_pages=1
 # Calculate how many page for a gven thread
 if nbr_pages>nbr_thread:
     nbr_pages_for_each_thread = int(nbr_pages / (nbr_thread-1))
@@ -173,9 +200,17 @@ for game in games:
     else:
         not_rated_games.append(game["name"])
 
-for review in reviews:
-    print(review, "\n")
-print(len(games),len(reviews))
-
 for i in range(10):
     print(random.choice(not_rated_games))
+
+csv_columns = ['game_name', 'game_id', 'nbr_likes', 'nbr_funny', 'nbr_awards', 'total_words', 'posted','last_edited', "id"]
+csv_file = "reviewed_games.csv"
+
+try:
+    with open(csv_file, 'w') as csvfile:
+        writer = csv.DictWriter(csvfile, fieldnames=csv_columns)
+        writer.writeheader()
+        for data in reviews:
+            writer.writerow(data)
+except IOError:
+    print("I/O error")
