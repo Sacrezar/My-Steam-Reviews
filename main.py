@@ -38,7 +38,8 @@ def convert_date(date):
     'December'
     ]
     date = date.split(" ")
-    date_to_return = date[0] + "/" + str(months.index(date[1])+1) + "/" 
+    month = months.index(date[1])+1
+    date_to_return = date[0] + "/" + str(month) + "/" 
     if len(date)<3:
         date_to_return += str(datetime.today().year)
     else: 
@@ -145,6 +146,7 @@ elem = driver.find_elements_by_class_name("pagelink")
 nbr_pages = int(elem[2].text)
 driver.close() 
 
+
 # Calculate how many page for a gven thread
 if nbr_pages>nbr_thread:
     nbr_pages_for_each_thread = int(nbr_pages / (nbr_thread-1))
@@ -174,6 +176,7 @@ for t in threads:
     t.join()
 while not que.empty():
     reviews = que.get()
+reviews.sort(key = lambda x:datetime.strptime(x['posted'], '%d/%m/%Y')) 
 
 
 games = get_games(steam_id,api_steam_key)
@@ -207,10 +210,9 @@ csv_columns = ['game_name', 'game_id', 'nbr_likes', 'nbr_funny', 'nbr_awards', '
 csv_file = "reviewed_games.csv"
 
 try:
-    with open(csv_file, 'w') as csvfile:
+    with open(csv_file, 'w', newline='') as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=csv_columns)
         writer.writeheader()
-        for data in reviews:
-            writer.writerow(data)
+        writer.writerows(reviews)
 except IOError:
     print("I/O error")
