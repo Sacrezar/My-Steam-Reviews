@@ -19,7 +19,7 @@ def convert_date(date):
     ]
     if date == "":
         return None
-
+    date = date.replace(",","")
     date = date.split(" ")
     month = months.index(date[1]) + 1
     date_to_return = date[0] + "/" + str(month) + "/"
