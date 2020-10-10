@@ -1,6 +1,5 @@
 import re
 from datetime import datetime
-from bs4 import BeautifulSoup
 
 
 def convert_date(date):
@@ -43,18 +42,19 @@ class ReviewHandler:
         nb_helpful = 0
         nb_funny = 0
         appreciation = self.review.find('div', class_ = "header").get_text()
-        print(appreciation)
+
         try:
-            nb_helpful = re.search("[0-9]+ people found this review helpful", appreciation).group()
-        except AttributeError:
+            nb_helpful = re.findall("\t([0-9]*?) (people|person) found this review helpful",appreciation)[0][0]
+        except IndexError:
             pass
         try:
-            nb_funny = re.search("[0-9]+ people found this review funny", appreciation).group()
-        except AttributeError:
+            nb_funny = re.findall("\t([0-9]*?) (people|person) found this review funny",appreciation)[0][0]
+        except IndexError:
             pass
+        
         return {
-            "nb_helpful":nb_helpful,
-            "nb_funny":nb_funny
+            "nb_helpful": int(nb_helpful),
+            "nb_funny": int(nb_funny)
         }
 
 
