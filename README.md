@@ -54,6 +54,7 @@ The first time, It will ask you some information and then fetch.
 <div align="center">
   <img src="/assets/fetching_eg.png"/>
 </div>
+
 ## FAQ
 ### Why not use the Steam API to retrieve reviews?
 As far as I know, it is not possible to use the Steam API that way.
