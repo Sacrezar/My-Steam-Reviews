@@ -61,7 +61,7 @@ class ReviewHandler:
     def get_game_id(self):
         title = self.review.find('div', class_ = "title")
         game_url = title.find(href=True)
-        game_id = re.search("[0-9]+", game_url['href']).group()
+        game_id = int(re.search("[0-9]+", game_url['href']).group())
         return game_id
 
 
