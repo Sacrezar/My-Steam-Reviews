@@ -7,6 +7,7 @@ import random
 
 from bs4 import BeautifulSoup
 from reviewhandler import ReviewHandler
+from userinfo import UserInfo
 
 NB_REVIEWS_PER_PAGE = 10
 
@@ -48,7 +49,6 @@ def get_urls(url, nb_reviews):
 def get_games(account_id, api_key):
     games = []
     call = f"http://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key={api_key}&steamid={account_id}&include_appinfo=1&include_played_free_games=1&format=json"
-    print(call)
     response = requests.get(call)
     games_info = response.json()["response"]["games"]
     for i in games_info:
@@ -65,7 +65,12 @@ def get_user_info():
     return user_info
 
 
-def main(url):
+def main():
+    user_info = UserInfo()
+    account_id = user_info.get_account_id()
+    api_key = user_info.get_api_key()
+
+    url = "https://steamcommunity.com/profiles/" + account_id +"/recommended/"
     reviews_data = []
     soup = get_soup(url)
     nb_reviews = int(get_nb_reviews(soup))
@@ -75,10 +80,9 @@ def main(url):
         print(f"Fetching data from {url}")
         soup = get_soup(url)
         reviews_data += reviews(soup)
-        
-    user_info = get_user_info()
-    account_id = user_info["Steam_info"]["ID"]
-    api_key = user_info["API_Steam_key"]
+    
+    print("")
+
     games = get_games(account_id, api_key)
     reviews_ = reviews_data.copy()
     for game in games:
@@ -87,6 +91,8 @@ def main(url):
                 del review["game_id"]
                 game["review_data"] = review 
                 reviews_data.remove(review)
+    
+    print(f"There is {len(reviews_data)} reviews for unknown game")
 
     for review in reviews_data:
         appid = review["game_id"]
@@ -96,6 +102,7 @@ def main(url):
         if response:
             game_name = response.json()["playerstats"]["gameName"]
         else: 
+            print(f"Can't find [appid: {appid}]")
             game_name = "Unknown"
         games.append({
             "name":game_name,
@@ -103,6 +110,8 @@ def main(url):
             "playtime":None,
             "review_data": review
         })
+    
+    print("")
 
     not_reviewed_games = []
     reviewed_games = []
@@ -112,8 +121,11 @@ def main(url):
                 reviewed_games.append(game)
         except KeyError:
             not_reviewed_games.append(game)
-    print(len(games), len(reviewed_games), len(not_reviewed_games))
+    print(f"You have \n\t{len(games)} games, \n\t{len(reviewed_games)} reviews, \n\t{len(not_reviewed_games)} games not reviewed.")
+    
+    print("")
 
+    print("10 random games not evaluated:") 
     games_to_review = random.sample(not_reviewed_games, 10)
     for game in games_to_review:
         print(game["name"])
@@ -121,4 +133,4 @@ def main(url):
 
 
 if __name__ == "__main__":
-    main("https://steamcommunity.com/id/sacrezar/recommended/")
+    main()
