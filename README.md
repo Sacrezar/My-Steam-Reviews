@@ -22,6 +22,8 @@ You'll need a Steam API Key, you can get it [there](https://steamcommunity.com/d
   <img src="/assets/apikey_steam.png"/>
 </div>
 
+I'm working on a way to don't need the API Key and I already know how. Still, it will be more effective to use the API Key.
+
 You'll need to know either your vanity URL or your account ID. You can find one of them in the URL of your account id:
 
 ```bash
