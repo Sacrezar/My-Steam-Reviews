@@ -92,7 +92,7 @@ def main():
                 game["review_data"] = review 
                 reviews_data.remove(review)
     
-    print(f"There is {len(reviews_data)} reviews for unknown game")
+    print(f"There are {len(reviews_data)} reviews for unknown games (dlc?)")
 
     for review in reviews_data:
         appid = review["game_id"]
