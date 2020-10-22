@@ -131,8 +131,11 @@ def main():
         except KeyError:
             not_reviewed_games.append(game)
     print(
-        f"You have \n\t{len(games)} games, \n\t{len(reviewed_games)} reviews,"
-        f"\n\t{len(not_reviewed_games)} games not reviewed."
+        f"""
+        You have \n\t{len(games)} games,
+        \n\t{len(reviewed_games)} reviews,
+        \n\t{len(not_reviewed_games)} games not reviewed.
+        """
     )
 
     print("")
