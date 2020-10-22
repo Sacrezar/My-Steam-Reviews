@@ -1,6 +1,4 @@
 import requests
-# import re
-# import pprint
 import numpy as np
 import json
 import random
@@ -131,11 +129,9 @@ def main():
         except KeyError:
             not_reviewed_games.append(game)
     print(
-        f"""
-        You have \n\t{len(games)} games,
-        \n\t{len(reviewed_games)} reviews,
-        \n\t{len(not_reviewed_games)} games not reviewed.
-        """
+        f"You have \n\t{len(games)} games,"
+        f"\n\t{len(reviewed_games)} reviews,"
+        f"\n\t{len(not_reviewed_games)} games not reviewed."
     )
 
     print("")
